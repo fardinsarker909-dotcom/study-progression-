@@ -4,7 +4,9 @@ A web-based application built with **Flask** to help students track their study 
 
 ## 🚀 Features
 * Track study sessions in real-time.
-* View history of completed tasks.
+*You can add unlimited books, chapters and also lessons.
+*There is a progress bar where you can visually see how much you have done and how much is left.
+* there is three defferent types of modes you can change it by you preference
 * Easy-to-use web interface.
 
 ## 🛠️ Technologies Used
