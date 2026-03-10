@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ book.title }} | Details</title>
+    <style>
+        :root { 
+            --accent: #4caf50; 
+            --lesson-accent: #00e5ff; 
+            --glass: rgba(255, 255, 255, 0.05); 
+            --border: rgba(255, 255, 255, 0.1); 
+        }
+        body { background: #0a0a0a; color: #eee; font-family: 'Audiowide', cursive; padding: 100px 40px 40px; margin: 0; overflow-x: hidden; min-height: 100vh; }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
+        
+        /* PERSISTENT NAV */
+        .nav-bar { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; background: rgba(10,10,10,0.8); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .nav-item { color: #888; text-decoration: none; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.3s; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
+        .nav-item:hover { color: var(--accent); background: rgba(255,255,255,0.05); }
+        .nav-item svg { width: 18px; height: 18px; fill: currentColor; }
+
+        .breadcrumbs { margin-bottom: 30px; color: #888; position: relative; z-index: 1; font-size: 0.9rem; }
+        .breadcrumbs a { color: var(--accent); text-decoration: none; font-weight: bold; }
+
+        /* TYPING BARS - High Visibility */
+        input[type="text"], input[type="number"] { 
+            padding: 14px 20px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            background: rgba(0, 0, 0, 0.4); 
+            color: #fff; 
+            font-family: inherit;
+            font-size: 15px;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
+        }
+        input:focus { 
+            outline: none; 
+            border-color: var(--accent); 
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05), inset 0 2px 10px rgba(0,0,0,0.7);
+        }
+        ::placeholder { color: #555; font-style: italic; letter-spacing: 0.5px; }
+
+        button { 
+            padding: 14px 25px; 
+            border-radius: 12px; 
+            background: var(--accent); 
+            color: #000; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            font-size: 12px; 
+            letter-spacing: 1px;
+            transition: 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+        button:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--accent); }
+
+        /* CHAPTERS & LESSONS */
+        .chap-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); border-left: 5px solid var(--accent); border-radius: 12px; margin-bottom: 15px; position: relative; z-index: 1; transition: 0.3s; }
+        .chap-header { padding: 22px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .chap-content { display: none; padding: 20px; background: rgba(0, 0, 0, 0.2); border-top: 1px solid var(--border); border-radius: 0 0 12px 12px; }
+        .lesson-item { 
+            display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 10px; border-radius: 8px; 
+            border: 1px solid var(--border); 
+            border-left: 4px solid var(--lesson-accent);
+        }
+        .lesson-item span { font-size: 1.1rem; font-weight: 600; color: #fff; letter-spacing: 0.3px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        
+        .bar-bg { background: rgba(0,0,0,0.3); height: 8px; border-radius: 4px; width: 120px; margin-left: 20px; overflow: hidden; border: 1px solid var(--border); }
+        .bar-fill { background: var(--accent); height: 100%; width: 0%; transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--accent); }
+        
+        .check-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #444; cursor: pointer; text-decoration: none; color: transparent; display: flex; align-items: center; justify-content: center; margin-left: 15px; transition: 0.3s; font-weight: bold; }
+        .completed { background: var(--accent); border-color: var(--accent); color: white !important; }
+
+        /* CREATE BAR */
+        .create-bar { background: rgba(0, 0, 0, 0.3); padding: 30px; border-radius: 20px; border: 1px solid var(--border); display: flex; gap: 15px; margin-top: 50px; position: relative; z-index: 1; }
+        .create-bar input { flex-grow: 1; color: var(--accent); }
+
+        /* UTILS */
+        .dropdown { position: relative; margin-left: 15px; }
+        .three-dots { cursor: pointer; color: #666; font-size: 22px; padding: 0 5px; }
+        .dropdown-content { display: none; position: absolute; right: 0; top: 35px; background: #1a1a1a; min-width: 140px; border-radius: 10px; z-index: 1000; border: 1px solid var(--border); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .dropdown-content a { color: #eee; padding: 12px 15px; text-decoration: none; display: block; font-size: 13px; }
+        .dropdown-content a:hover { background: var(--accent); color: #000; }
+        #custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; backdrop-filter: blur(10px); align-items: center; justify-content: center; }
+        .modal-box { background: #1a1a1a; border: 1px solid var(--border); padding: 35px; border-radius: 20px; width: 340px; text-align: center; }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <nav class="nav-bar">
+        <a href="/" class="nav-item"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> Home</a>
+        <a href="/library" class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h8v2h-8zm0 3h4v2h-4zm0-6h8v2h-8z"/></svg> Library</a>
+    </nav>
+
+    <div id="custom-modal">
+        <div class="modal-box">
+            <h3 style="margin-top:0;">Delete confirm?</h3>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 25px;">
+                <button onclick="closeModal()" style="background:transparent; color:#888;">Cancel</button>
+                <a id="modal-confirm-link" href="#" style="background:#ff5252; color:white; padding:12px 25px; border-radius:10px; text-decoration:none; font-weight:bold;">Delete</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="breadcrumbs">
+        <a href="/library">Library</a> <span>&nbsp;/&nbsp;</span> <strong>{{ book.title }}</strong>
+    </div>
+
+    <h1 style="margin: 0 0 35px; font-weight: 400; font-size: 2.2rem; letter-spacing: -1px;">{{ book.title }}</h1>
+
+    {% for chap in book.chapters %}
+    <div class="chap-card">
+        <div class="chap-header" id="chap-display-{{chap.id}}">
+            <div onclick="toggleChapter('c-{{chap.id}}')" style="flex-grow:1;">
+                <strong style="font-size: 1.1rem; letter-spacing: 0.5px;">{{ chap.name }}</strong>
+                <div style="font-size:0.85rem; color:#666; margin-top:4px;">{{ chap.current_page }} / {{ chap.total_pages }} Pages Completed</div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <span style="color:var(--accent); font-weight: 800; font-size: 1.1rem;">{{ chap.percent }}%</span>
+                <div class="bar-bg"><div class="bar-fill" data-width="{{ chap.percent }}"></div></div>
+                <div class="dropdown" onclick="event.stopPropagation()">
+                    <span class="three-dots" onclick="toggleMenu('cm-{{chap.id}}')">⋮</span>
+                    <div id="cm-{{chap.id}}" class="dropdown-content">
+                        <a href="javascript:void(0)" onclick="showChapEdit('{{chap.id}}')">Rename Chapter</a>
+                        <a href="javascript:void(0)" onclick="openModal('/delete_chapter/{{book.id}}/{{chap.id}}')" style="color:#ff5252;">Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chap-header" id="chap-edit-{{chap.id}}" style="display:none;">
+            <form action="/update_chapter/{{book.id}}/{{chap.id}}" method="POST" style="display:flex; width:100%; gap:10px;">
+                <input type="text" name="name" value="{{ chap.name }}" style="flex-grow:1;">
+                <button type="submit">Update</button>
+                <button type="button" onclick="hideChapEdit('{{chap.id}}')" style="background:none; color:#888; font-size:11px;">Cancel</button>
+            </form>
+        </div>
+
+        <div id="c-{{chap.id}}" class="chap-content">
+            {% for les in chap.lessons %}
+            <div class="lesson-item" id="les-display-{{les.id}}">
+                <span style="flex-grow:1;">{{ les.name }}</span>
+                
+                <form action="/update_lesson_page/{{ book.id }}/{{ chap.id }}/{{ les.id }}" method="POST" style="display:flex; align-items:center; gap:8px;">
+                    <input type="number" name="current_page" value="{{ les.current_page }}" style="width:50px; text-align:center; padding:5px 8px; font-size:13px;" onchange="this.form.submit()">
+                    <span style="color:#555;">/ {{ les.total_pages }}</span>
+                </form>
+
+                <a href="/toggle_lesson/{{ book.id }}/{{ chap.id }}/{{ les.id }}" class="check-btn {{ 'completed' if les.is_completed else '' }}">✓</a>
+                
+                <div class="dropdown" onclick="event.stopPropagation()">
+                    <span class="three-dots" style="font-size: 18px;" onclick="toggleMenu('lm-{{les.id}}')">⋮</span>
+                    <div id="lm-{{les.id}}" class="dropdown-content">
+                        <a href="javascript:void(0)" onclick="showLesEdit('{{les.id}}')">Edit Lesson</a>
+                        <a href="javascript:void(0)" onclick="openModal('/delete_lesson/{{book.id}}/{{chap.id}}/{{les.id}}')" style="color:#ff5252;">Delete</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lesson-item" id="les-edit-{{les.id}}" style="display:none;">
+                <form action="/update_lesson_full/{{book.id}}/{{chap.id}}/{{les.id}}" method="POST" style="display:flex; width:100%; gap:8px;">
+                    <input type="text" name="name" value="{{ les.name }}" style="flex-grow:1;">
+                    <input type="number" name="total_pages" value="{{ les.total_pages }}" style="width:60px;">
+                    <button type="submit">Save</button>
+                    <button type="button" onclick="hideLesEdit('{{les.id}}')" style="background:none; color:#888;">X</button>
+                </form>
+            </div>
+            {% endfor %}
+
+            <form action="/add_lesson/{{ book.id }}/{{ chap.id }}" method="POST" style="margin-top:20px; display:flex; gap:10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+                <input type="text" name="name" placeholder="New Lesson Title..." required style="flex-grow:1;">
+                <input type="number" name="total_pages" placeholder="Pages" required style="width:80px;">
+                <button type="submit" style="background:#2196f3; color:white;">+ Add Lesson</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+
+    <form action="/add_chapter/{{book.id}}" method="POST" class="create-bar">
+        <input type="text" name="name" placeholder="Enter New Chapter Title (e.g. Advanced Logic)..." required>
+        <button type="submit" style="min-width: 180px;">+ Create Chapter</button>
+    </form>
+
+    <script>
+        const modeColors = { 'neuron': '#00d2ff', 'chill': '#aebaff', 'classic': '#4caf50' };
+        const lessonColors = { 'neuron': '#ffea00', 'chill': '#ffffff', 'classic': '#00e5ff' }; 
+        const currentMode = localStorage.getItem('studyMode') || 'classic';
+        document.documentElement.style.setProperty('--accent', modeColors[currentMode]);
+        document.documentElement.style.setProperty('--lesson-accent', lessonColors[currentMode]);
+
+        function openModal(url) { document.getElementById('modal-confirm-link').href = url; document.getElementById('custom-modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('custom-modal').style.display = 'none'; }
+        function toggleChapter(id) { let el = document.getElementById(id); let isVisible = el.style.display === 'block'; el.style.display = isVisible ? 'none' : 'block'; if(!isVisible) localStorage.setItem('openChap', id); else localStorage.removeItem('openChap'); }
+        function toggleMenu(id) { event.stopPropagation(); document.querySelectorAll('.dropdown-content').forEach(d => { if(d.id !== id) d.style.display = 'none'; }); let m = document.getElementById(id); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+        function showChapEdit(id) { document.getElementById('chap-display-'+id).style.display='none'; document.getElementById('chap-edit-'+id).style.display='flex'; }
+        function hideChapEdit(id) { document.getElementById('chap-display-'+id).style.display='flex'; document.getElementById('chap-edit-'+id).style.display='none'; }
+        function showLesEdit(id) { document.getElementById('les-display-'+id).style.display='none'; document.getElementById('les-edit-'+id).style.display='flex'; }
+        function hideLesEdit(id) { document.getElementById('les-display-'+id).style.display='flex'; document.getElementById('les-edit-'+id).style.display='none'; }
+
+        // --- 3D PARTICLE ENGINE ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const mouse = { x: null, y: null, radius: 150 };
+        window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = (currentMode === 'chill') ? Math.random() * 3 + 1 : Math.random() * 2 + 1;
+                this.velocity = { x: (Math.random() - 0.5) * 0.8, y: (currentMode === 'chill' ? Math.random() * 1 + 0.5 : (Math.random() - 0.5) * 0.8) };
+            }
+            draw() {
+                ctx.fillStyle = (currentMode === 'neuron') ? '#00d2ff' : (currentMode === 'chill' ? 'rgba(255,255,255,0.4)' : 'rgba(76, 175, 80, 0.4)');
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+            update() {
+                this.x += this.velocity.x; this.y += this.velocity.y;
+                if (this.y > canvas.height) this.y = 0; if (this.x > canvas.width) this.x = 0;
+                let dx = mouse.x - this.x; let dy = mouse.y - this.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < mouse.radius) {
+                    const force = (mouse.radius - dist) / mouse.radius;
+                    this.x -= (dx / dist) * force * 5; this.y -= (dy / dist) * force * 5;
+                }
+            }
+        }
+
+        function init() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < 80; i++) particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            if(currentMode === 'neuron') {
+                for (let a = 0; a < particles.length; a++) {
+                    for (let b = a; b < particles.length; b++) {
+                        let distance = ((particles[a].x - particles[b].x) ** 2) + ((particles[a].y - particles[b].y) ** 2);
+                        if (distance < 15000) {
+                            ctx.strokeStyle = `rgba(0, 210, 255, ${1 - distance/15000})`;
+                            ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke();
+                        }
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            document.querySelectorAll('.bar-fill').forEach(bar => { bar.style.width = bar.getAttribute('data-width') + '%'; });
+            let last = localStorage.getItem('openChap');
+            if(last && document.getElementById(last)) document.getElementById(last).style.display = 'block';
+            init(); animate();
+        };
+        window.onresize = init;
+        window.onclick = function() { document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none'); }
+    </script>
+</body>
+</html>

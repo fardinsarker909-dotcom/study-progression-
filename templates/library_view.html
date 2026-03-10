@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Library</title>
+    <style>
+        :root { 
+            --accent: #4caf50; 
+            --glass: rgba(255, 255, 255, 0.05); 
+            --border: rgba(255, 255, 255, 0.1); 
+        }
+        body { background: #0a0a0a; color: #eee; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; padding: 100px 40px 40px; margin: 0; overflow-x: hidden; }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
+        
+        .nav-bar { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; background: rgba(10,10,10,0.8); backdrop-filter: blur(15px); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); z-index: 2000; }
+        .nav-item { color: #888; text-decoration: none; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; padding: 5px 15px; border-radius: 20px; }
+        .nav-item.active { color: var(--accent); background: rgba(255,255,255,0.05); }
+
+        .lib-header { 
+            font-size: 3rem; 
+            font-weight: 800;
+            font-family: monospace; 
+            letter-spacing: -2px; 
+            color: #fff; 
+            margin-bottom: 50px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+        .lib-grid { display: grid; grid-template-columns: 1fr; gap: 15px; max-width: 800px; margin: 0 auto; position: relative; z-index: 1; }
+        .lib-card { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 30px; 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--border); 
+            border-left: 6px solid var(--accent); 
+            border-radius: 16px; 
+            text-decoration: none; 
+            color: inherit; 
+            transition: 0.4s;
+            backdrop-filter: blur(10px);
+        }
+        .lib-card:hover { transform: translateX(15px); background: rgba(255,255,255,0.08); border-color: var(--accent); }
+        .lib-title { font-size: 1.5rem;font-family:'fantasy','papyrus' ; font-weight: 600; color: #fff; letter-spacing: -0.5px; }
+        .lib-stats { font-family: 'cursive','Lucida Handwriting'; color: var(--accent); font-weight: 800; font-size: 1.4rem; }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <nav class="nav-bar">
+        <a href="/" class="nav-item">Home</a>
+        <a href="/library" class="nav-item active">Library</a>
+    </nav>
+
+    <div class="lib-grid">
+        <h1 class="lib-header">Archived Knowledge</h1>
+        {% for book in library %}
+        <a href="/book/{{ book.id }}" class="lib-card">
+            <div class="lib-title">{{ book.title }}</div>
+            <div class="lib-stats">{{ book.percent }}%</div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <script>
+        const modeColors = { 'neuron': '#00d2ff', 'chill': '#aebaff', 'classic': '#4caf50' };
+        const currentMode = localStorage.getItem('studyMode') || 'classic';
+        document.documentElement.style.setProperty('--accent', modeColors[currentMode]);
+
+        const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d');
+        let particles = []; const mouse = { x: null, y: null, radius: 150 };
+        window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
+        
+        class Particle {
+            constructor() { 
+                this.x = Math.random() * canvas.width; 
+                this.y = Math.random() * canvas.height; 
+                this.size = (currentMode === 'chill') ? Math.random() * 3 + 1 : Math.random() * 2 + 1; 
+                this.velocity = { x: (Math.random() - 0.5) * 0.8, y: (currentMode === 'chill' ? Math.random() * 1 + 0.5 : (Math.random() - 0.5) * 0.8) }; 
+            }
+            draw() { 
+                ctx.fillStyle = (currentMode === 'neuron') ? '#00d2ff' : (currentMode === 'chill' ? 'rgba(174,186,255,0.4)' : 'rgba(76, 175, 80, 0.4)'); 
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); 
+            }
+            update() { 
+                this.x += this.velocity.x; this.y += this.velocity.y; 
+                if (this.y > canvas.height) this.y = 0; if (this.x > canvas.width) this.x = 0;
+                let dx = mouse.x - this.x; let dy = mouse.y - this.y; let dist = Math.sqrt(dx*dx + dy*dy); 
+                if (dist < mouse.radius) { const force = (mouse.radius - dist) / mouse.radius; this.x -= (dx / dist) * force * 5; this.y -= (dy / dist) * force * 5; } 
+            }
+        }
+        function init() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; particles = []; for (let i = 0; i < 80; i++) particles.push(new Particle()); }
+        function animate() { 
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            particles.forEach(p => { p.update(); p.draw(); }); 
+            if(currentMode === 'neuron') {
+                for (let a = 0; a < particles.length; a++) {
+                    for (let b = a; b < particles.length; b++) {
+                        let distance = ((particles[a].x - particles[b].x) ** 2) + ((particles[a].y - particles[b].y) ** 2);
+                        if (distance < 15000) {
+                            ctx.strokeStyle = `rgba(0, 210, 255, ${1 - distance/15000})`;
+                            ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke();
+                        }
+                    }
+                }
+            }
+            requestAnimationFrame(animate); 
+        }
+        window.onload = () => { init(); animate(); };
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{
+    "app_settings": {
+        "boss_title": "Exam Preparation"
+    },
+    "library": [
+        {
+            "id": 0,
+            "title": "Physics",
+            "chapters": [
+                {
+                    "id": 1,
+                    "name": "st",
+                    "lessons": [
+                        {
+                            "id": 0,
+                            "name": "uj",
+                            "current_page": 20,
+                            "total_pages": 30,
+                            "is_completed": false
+                        },
+                        {
+                            "id": 1,
+                            "name": "water",
+                            "current_page": 0,
+                            "total_pages": 30,
+                            "is_completed": false
+                        }
+                    ],
+                    "total_pages": 60,
+                    "current_page": 20,
+                    "percent": 33
+                },
+                {
+                    "id": 2,
+                    "name": "fardin sarker",
+                    "lessons": [
+                        {
+                            "id": 0,
+                            "name": "heat",
+                            "current_page": 0,
+                            "total_pages": 12,
+                            "is_completed": false
+                        }
+                    ],
+                    "total_pages": 12,
+                    "current_page": 0,
+                    "percent": 0
+                },
+                {
+                    "id": 3,
+                    "name": "fgh",
+                    "lessons": [],
+                    "total_pages": 0,
+                    "current_page": 0,
+                    "percent": 0
+                }
+            ],
+            "percent": 27
+        }
+    ]
+}
