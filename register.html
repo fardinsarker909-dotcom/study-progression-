@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register | Study Tracker</title>
+    <style>
+        /* Exact same styling logic as login.html */
+        :root { --accent: #4caf50; --border: rgba(255, 255, 255, 0.1); }
+        body { background: #0a0a0a; color: #eee; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; overflow-x: hidden; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
+        .auth-panel { background: rgba(10,10,10,0.8); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 320px; text-align: center; position: relative; z-index: 1; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 14px 20px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0, 0, 0, 0.4); color: #fff; font-size: 15px; margin-bottom: 15px; box-sizing: border-box; transition: 0.3s; }
+        input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 15px rgba(255, 255, 255, 0.05); }
+        button { width: 100%; padding: 14px; border-radius: 12px; background: var(--accent); color: #000; border: none; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        button:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--accent); }
+        a { color: var(--accent); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="auth-panel">
+        <h2 style="margin-top:0; margin-bottom: 30px; letter-spacing: -1px;">New Node Setup</h2>
+        <form action="/register" method="POST">
+            <input type="text" name="username" placeholder="Choose Username" required>
+            <input type="password" name="password" placeholder="Create Password" required>
+            <button type="submit">Establish User</button>
+        </form>
+        <p style="margin-top: 25px; font-size: 13px; color: #888;">Already exists? <a href="/login">Return to Access</a></p>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div style="color: #ff5252; margin-top: 15px; font-size: 13px;">{{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <script>
+        const currentMode = localStorage.getItem('studyMode') || 'classic';
+        const modeColors = { 'neuron': '#00d2ff', 'chill': '#aebaff', 'classic': '#4caf50' };
+        document.documentElement.style.setProperty('--accent', modeColors[currentMode]);
+
+        const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d');
+        let particles = []; const mouse = { x: null, y: null, radius: 150 };
+        window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
+        
+        class Particle {
+            constructor() { 
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; 
+                this.size = (currentMode === 'chill') ? Math.random() * 3 + 1 : Math.random() * 2 + 1; 
+                this.velocity = { x: (Math.random() - 0.5) * 0.8, y: (currentMode === 'chill' ? Math.random() * 1 + 0.5 : (Math.random() - 0.5) * 0.8) }; 
+            }
+            draw() { 
+                ctx.fillStyle = (currentMode === 'neuron') ? '#00d2ff' : (currentMode === 'chill' ? 'rgba(255,255,255,0.4)' : 'rgba(76, 175, 80, 0.4)'); 
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); 
+            }
+            update() { 
+                this.x += this.velocity.x; this.y += this.velocity.y; 
+                if (this.y > canvas.height) this.y = 0; if (this.x > canvas.width) this.x = 0;
+                let dx = mouse.x - this.x; let dy = mouse.y - this.y; let dist = Math.sqrt(dx*dx + dy*dy); 
+                if (dist < mouse.radius) { const force = (mouse.radius - dist) / mouse.radius; this.x -= (dx / dist) * force * 5; this.y -= (dy / dist) * force * 5; } 
+            }
+        }
+        function init() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; particles = []; for (let i = 0; i < 80; i++) particles.push(new Particle()); }
+        function animate() { 
+            ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); 
+            if(currentMode === 'neuron') {
+                for (let a = 0; a < particles.length; a++) {
+                    for (let b = a; b < particles.length; b++) {
+                        let distance = ((particles[a].x - particles[b].x) ** 2) + ((particles[a].y - particles[b].y) ** 2);
+                        if (distance < 15000) { ctx.strokeStyle = `rgba(0, 210, 255, ${1 - distance/15000})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke(); }
+                    }
+                }
+            }
+            requestAnimationFrame(animate); 
+        }
+        window.onload = () => { init(); animate(); };
+    </script>
+</body>
+</html>
