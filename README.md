@@ -8,6 +8,8 @@ A web-based application built with **Flask** to help students track their study 
 *There is a progress bar where you can visually see how much you have done and how much is left.
 * there is three defferent types of modes you can change it by you preference
 * Easy-to-use web interface.
+* there is registration/login system for privet use
+* there is a guest account for visitor
 
 ## 🛠️ Technologies Used
 * **Python** (Flask Framework)
