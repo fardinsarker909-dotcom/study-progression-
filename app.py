@@ -66,19 +66,45 @@ def calculate_all_progress(username):
 def home():
     if not current_user.is_authenticated:
         return redirect(url_for("guest_login"))
+    
     uname = current_user.username
-    if uname not in data_store["users"]: return redirect(url_for("logout"))
+    if uname not in data_store["users"]: 
+        return redirect(url_for("logout"))
+        
     score = calculate_all_progress(uname)
     user_data = data_store["users"][uname]["data"]
-    return render_template("index.html", library=user_data["library"], master_score=score, boss_title=user_data["app_settings"]["boss_title"], username=uname)
-
+    
+    # INDENT THIS LINE (Line 74)
+    return render_template(
+        "index.html", 
+        library=user_data["library"], 
+        master_score=score, 
+        boss_title=user_data["app_settings"]["boss_title"], 
+        username=uname
+    )
 @app.route("/library")
 @login_required
 def library_view():
     uname = current_user.username
     calculate_all_progress(uname)
     return render_template("library_view.html", library=data_store["users"][uname]["data"]["library"], username=uname)
-
+@app.route("/rename_boss", methods=["POST"])
+@login_required
+def rename_boss():
+    new_title = request.form.get("new_title")
+    uname = current_user.username
+    
+    # Check if app_settings exists, if not, create it
+    if "app_settings" not in data_store["users"][uname]["data"]:
+        data_store["users"][uname]["data"]["app_settings"] = {}
+        
+    # Update the title inside app_settings
+    data_store["users"][uname]["data"]["app_settings"]["boss_title"] = new_title
+    
+    save_data(data_store)
+    
+    # IMPORTANT: We use 'home' here because your route is @app.route("/") def home():
+    return redirect(url_for('home'))
 @app.route("/book/<int:book_id>")
 @login_required
 def book_detail(book_id):
